@@ -22,6 +22,9 @@ def install_head_chunks(transformer, policy, chunk, cpu_outputs=False, projectio
     from src.models.softmax_attention.kernels import _qk_prep
     from src.models.ops.fp8_linear import Fp8Linear, quantize_activation
     from .fp8_ops import ColumnScale, project_with_scale, row_scale, sliced_projection
+    from .rocm_bf16 import make_gate_linear, make_state_readout
+    gate_linear = make_gate_linear(policy, chunk, parallelism)
+    state_readout = make_state_readout(policy, chunk, parallelism)
 
     def forward(attn, x, rotary):
         layout = attn.layout
@@ -36,7 +39,9 @@ def install_head_chunks(transformer, policy, chunk, cpu_outputs=False, projectio
         video = slice(layout.video_start, layout.video_end)
         text = slice(*layout.text_range)
         frame_mean = x[video].view(layout.num_frames, layout.tokens_per_frame, -1).mean(1, dtype=torch.float32)
-        gate_hidden = x[video] if branch.output_gate.down is None else branch.output_gate.down(x[video])
+        gate_hidden = (x[video] if branch.output_gate.down is None else
+                       branch.output_gate.down(x[video]) if gate_linear is F.linear else
+                       gate_linear(x[video], branch.output_gate.down.weight, branch.output_gate.down.bias))
         soft_shape = (len(x), attn.num_heads * attn.head_dim)
         linear_shape = (layout.num_frames * layout.tokens_per_frame, attn.num_heads * branch.head_dim)
         soft_scale = ColumnScale(len(x), x.device) if cpu_outputs and isinstance(orig.to_out[0], Fp8Linear) else None
@@ -72,8 +77,10 @@ def install_head_chunks(transformer, policy, chunk, cpu_outputs=False, projectio
             del q, k
             if attn.enable_softmax_gate:
                 gate_module = attn.softmax_gate
-                gate_x = x if gate_module.down is None else gate_module.down(x)
-                gate = torch.sigmoid(F.linear(gate_x, gate_module.up.weight[heads], gate_module.up.bias[heads]))
+                gate_x = (x if gate_module.down is None else
+                          gate_module.down(x) if gate_linear is F.linear else
+                          gate_linear(x, gate_module.down.weight, gate_module.down.bias))
+                gate = torch.sigmoid(gate_linear(gate_x, gate_module.up.weight[heads], gate_module.up.bias[heads]))
                 attended.mul_(gate[..., None])
             if soft_scale is not None:
                 soft_scale.update(attended.flatten(1))
@@ -82,10 +89,10 @@ def install_head_chunks(transformer, policy, chunk, cpu_outputs=False, projectio
             else:
                 soft[:, channels].copy_(attended.flatten(1), non_blocking=cpu_outputs)
             del attended
-            beta = torch.sigmoid(F.linear(x[video], branch.beta_proj.weight[heads]))
-            text_beta = torch.sigmoid(F.linear(x[text], branch.beta_proj.weight[heads])) if attn.enable_text_state else None
+            beta = torch.sigmoid(gate_linear(x[video], branch.beta_proj.weight[heads]))
+            text_beta = torch.sigmoid(gate_linear(x[text], branch.beta_proj.weight[heads])) if attn.enable_text_state else None
             linear_channels = slice(start * branch.head_dim, end * branch.head_dim)
-            gate = torch.sigmoid(F.linear(gate_hidden, branch.output_gate.up.weight[linear_channels],
+            gate = torch.sigmoid(gate_linear(gate_hidden, branch.output_gate.up.weight[linear_channels],
                                          branch.output_gate.up.bias[linear_channels]))
             gate = gate.view(-1, end - start, branch.head_dim)
             readout = branch(None, layout.num_frames, layout.tokens_per_frame, bounds,
@@ -184,4 +191,6 @@ def install_head_chunks(transformer, policy, chunk, cpu_outputs=False, projectio
     for attn in iter_hybrids(transformer):
         if attn.head_dim != attn.linear_attention.head_dim:
             raise ValueError('The shared-QKV profile requires matching branch head dimensions')
+        if state_readout is not None:
+            attn.linear_attention._readout_inference = types.MethodType(state_readout, attn.linear_attention)
         attn._hybrid_forward = types.MethodType(forward, attn)

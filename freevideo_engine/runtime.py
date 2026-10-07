@@ -83,6 +83,12 @@ class Engine:
             raise ValueError('Unknown linear compute policy')
         if min(query_chunk, ff_chunk, head_chunk, projection_chunk) < 0:
             raise ValueError('Chunk sizes cannot be negative; zero disables chunking')
+        for kind in ('GATE', 'STATE'):
+            selected_blas = os.environ.get(f'FREEVIDEO_ROCM_{kind}_BLAS', 'default')
+            if selected_blas not in ('default', 'cublaslt'):
+                raise ValueError(f'FREEVIDEO_ROCM_{kind}_BLAS must be default or cublaslt')
+            if selected_blas != 'default' and (head_chunk != 16 or head_parallelism != 1 or not inference_kernels):
+                raise ValueError('BF16 hipBLASLt replacements require inference kernels, head chunk 16 and serial heads')
         if window_batch < 1:
             raise ValueError('Window batch must be positive')
         if type(head_parallelism) is not int or head_parallelism not in (1, 2, 4):
@@ -419,6 +425,8 @@ class Engine:
         self.config = {'device_backend': self.device_backend.capabilities.name, 'task': task, 'attention': attention, 'prefetch': prefetch, 'adaln_cache': adaln_cache,
                        'rocm_spatial_conv': os.environ.get('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen') if torch.version.hip else None,
                        'rocm_attention': os.environ.get('FREEVIDEO_ROCM_ATTENTION', 'aotriton') if torch.version.hip else None,
+                       'rocm_gate_blas': os.environ.get('FREEVIDEO_ROCM_GATE_BLAS', 'default') if torch.version.hip else None,
+                       'rocm_state_blas': os.environ.get('FREEVIDEO_ROCM_STATE_BLAS', 'default') if torch.version.hip else None,
                        'adaln_mode': ('portable-model-asset' if table_cache is not None and table_cache.asset else
                                       'optional-model-asset' if table_cache is not None and table_cache.optional_loaded else
                                       'local-precompute' if adaln_cache else 'original-projections'),
@@ -623,6 +631,8 @@ class Engine:
             gemm_before = execution_counts()
         parallel_before = {name: getattr(self.attention, name, 0)
                            for name in ('parallel_head_calls', 'parallel_head_warmups')}
+        bf16_before = {name: getattr(self.attention, name, 0)
+                       for name in ('rocm_gate_linear_calls', 'rocm_state_matmul_calls')}
         self.device_backend.reset_peak_memory_stats()
         self.device_backend.synchronize()
         started = time.perf_counter()
@@ -655,6 +665,8 @@ class Engine:
                                 for key, count in self.attention.backend_calls.items()} if attention_before is not None else None),
                            'fp8_kernel_calls': ({key: count - gemm_before[key]
                                 for key, count in execution_counts().items()} if gemm_before is not None else None),
+                           'rocm_bf16_execution': {name: getattr(self.attention, name, 0) - count
+                                                   for name, count in bf16_before.items()},
                            'head_execution': dict(requested_parallelism=self.config.get('head_parallelism', 1),
                                **{name: getattr(self.attention, name, 0) - count
                                   for name, count in parallel_before.items()}),

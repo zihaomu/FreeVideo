@@ -60,6 +60,8 @@ def main():
     report['spatial_conv_environment']=dict(FREEVIDEO_ROCM_SPATIAL_CONV=os.environ.get('FV_ROCM_SPATIAL_CONV','miopen'))
     report['attention_environment']=dict(FREEVIDEO_ROCM_ATTENTION=os.environ.get('FV_ROCM_ATTENTION','aotriton'))
     report['audio_conv_environment']=dict(FREEVIDEO_ROCM_AUDIO_CONV=os.environ.get('FV_ROCM_AUDIO_CONV','miopen'))
+    report['bf16_environment']={f'FREEVIDEO_ROCM_{kind}_BLAS': os.environ.get(f'FV_ROCM_{kind}_BLAS','default')
+                                for kind in ('GATE','STATE')}
     report['case']={k:str(v) if isinstance(v,Path) else v for k,v in report['case'].items()}
     def save():
         staging=report_path.with_suffix('.tmp')
