@@ -74,3 +74,5 @@ Beta gate 的 Sigmoid 输出有约 0.00145% 元素改变。把两种门控同时
 通过 `run_rocm_fast.sh` 调用相应 `/data/experiments/freevideo-r9700/prepared/sampler-opportunities-20261007/` 驱动，提供 `--profile`、`--conditioning`、`--out`。复现使用新的报告目录和缓存组，保留本轮数据。原型及 SHA256 归档为 `sampler-candidate-source.zip` 和 `sampler-source-sha256.json`；初始投影驱动的迭代器错误单独保存，不参与收益计算。
 
 方法参考：[Triton 官方 Fused Attention 示例](https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html) 提供切块搜索思路；[AMD hipBLASLt 离线调优文档](https://rocm.docs.amd.com/projects/hipBLASLt/en/latest/how-to/how-to-use-hipblaslt-offline-tuning.html) 描述按具体 GEMM 搜索算法，结果不能跨库版本或架构复用。这里的性能和误差结论均来自本地实测，没有把其他 GPU 的收益套用到 R9700。
+
+后续 [CUDA 性能对齐与低效算子定位](r9700-cuda-parity.md) 补充同卡 BF16 后端对照、真实状态矩阵乘验证、TF32 差异及可移植的 CUDA/ROCm 算子测量工具。
