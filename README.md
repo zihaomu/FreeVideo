@@ -94,6 +94,7 @@ Generate a video from a prompt file:
 - [FreeVideo Adaptive Execution Planner](docs/execution-planning.md)
 - [R9700 benchmark workload aligned with current official defaults (中文)](docs/zh-CN/r9700-official-workload.md)
 - [R9700 full-workload GPU operator breakdown (中文)](docs/zh-CN/r9700-official-operators.md)
+- [R9700 operator optimization paths informed by h3-vdn.c (中文)](docs/zh-CN/r9700-h3-implementation-paths.md)
 
 ### Support
 

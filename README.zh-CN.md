@@ -98,6 +98,7 @@ git clone https://github.com/FlashML-org/FreeVideo.git && cd FreeVideo
 - [R9700 BF16 算子替换与端到端复测](docs/zh-CN/r9700-operator-replacement.md)
 - [R9700 官方工作负载对齐：1344×768、10 秒、8＋3 步](docs/zh-CN/r9700-official-workload.md)
 - [R9700 官方 8＋3 步配置的逐算子耗时](docs/zh-CN/r9700-official-operators.md)
+- [R9700 借鉴 h3-vdn.c 的算子优化路径](docs/zh-CN/r9700-h3-implementation-paths.md)
 
 ### 问题反馈
 

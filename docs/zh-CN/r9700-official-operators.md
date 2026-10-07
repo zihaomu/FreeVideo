@@ -98,6 +98,8 @@ FP8 矩阵乘进一步按实际调用位置拆分：
 
 本轮仅增加采集、统计与可视化工具，生产算子、采样步数和精度配置保持原基线。以上是基于热点排序的优化方向，不是已经验证的加速收益，也不是同条件 CUDA 对照结论。
 
+后续[借鉴 h3-vdn.c 的实现路径调研](r9700-h3-implementation-paths.md)对照 native HIP 优化与当前数学合同，完成算子探针及两种分辨率的真实首块验证，给出可实施候选与应排除的路径。
+
 ## 采集、关联与验证
 
 原始请求和模型工作负载见[配置对齐报告](r9700-official-workload.md)。本轮固定相同 R9700 `GPU-b11d6bcf3a61a551`、Docker 镜像、native FP8、window batch 4、head chunk 16、FF chunk 2048、projection chunk 1024、resident blocks 8 和 decoder Linear 缓存。BF16 gate/state 后端保持 `default`，全局 hipBLASLt 开关为 0。
