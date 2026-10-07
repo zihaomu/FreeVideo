@@ -50,12 +50,19 @@ class WindowAttention:
                  if self.device_backend.capabilities.name == 'cuda'
                  else self.device_backend.capabilities.attention_candidates)
         self.backend_calls = {part + '_' + name: 0 for part in ('global', 'window') for name in names}
+        if torch.version.hip:
+            self.backend_calls.update({'global_rocm-triton': 0, 'window_rocm-triton': 0})
         self.select_backend(backend)
 
     def batched(self, q, k, v, scale, *, window=False):
         leg = self.window_backend if window else self.global_backend
         self.calls += 1
-        self.backend_calls[('window_' if window else 'global_') + leg] += 1
+        accelerated_window = (window and leg == 'torch-flash'
+                              and getattr(self.kernels, 'rocm_backend', None) == 'triton-window')
+        actual = 'rocm-triton' if accelerated_window else leg
+        self.backend_calls[('window_' if window else 'global_') + actual] += 1
+        if accelerated_window:
+            return self.kernels.batched(leg, q, k, v, scale, window=True)
         return self.kernels.batched(leg, q, k, v, scale)
 
     def dense(self, q, k, v, scale, *, window=False):

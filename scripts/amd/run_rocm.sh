@@ -28,6 +28,8 @@ exec docker run --rm --pull=never --read-only \
   --env ROCBLAS_USE_HIPBLASLT="${FV_ROCBLAS_USE_HIPBLASLT:-0}" \
   --env TORCH_COMPILE_DISABLE="${FV_TORCH_COMPILE_DISABLE:-0}" \
   --env FREEVIDEO_ROCM_VIDEO_BLAS="${FV_ROCM_VIDEO_BLAS:-default}" \
+  --env FREEVIDEO_ROCM_SPATIAL_CONV="${FV_ROCM_SPATIAL_CONV:-miopen}" \
+  --env FREEVIDEO_ROCM_ATTENTION="${FV_ROCM_ATTENTION:-aotriton}" \
   --env FV_STORAGE_ROOT=/data --env FV_PREFLIGHT_IMAGE_ID="$fv_image" \
   --env TRITON_CACHE_DIR="$fv_container_experiment_root/kernel-cache/$fv_cache_group/triton" \
   --env TORCHINDUCTOR_CACHE_DIR="$fv_container_experiment_root/kernel-cache/$fv_cache_group/inductor" \

@@ -8,13 +8,30 @@ def activate():
     import torch
     if not torch.version.hip:
         return
+    spatial_backend = os.environ.get('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen')
+    if spatial_backend not in ('miopen', 'triton'):
+        raise ValueError('FREEVIDEO_ROCM_SPATIAL_CONV must be miopen or triton')
+    if spatial_backend == 'triton':
+        arch = torch.cuda.get_device_properties(torch.cuda.current_device()).gcnArchName.split(':')[0]
+        if arch != 'gfx1201':
+            raise ValueError('Triton H3 spatial convolution is validated only on gfx1201')
     from src.models.linear_attention.features import LinearAttentionSepConv
     from src.models.linear_attention.branch import _HeadSliceSepConv
 
     def wrap(original):
         @wraps(original)
-        def spatial(self, *args, **kwargs):
-            x, weight = original(self, *args, **kwargs)
+        def spatial(self, proj, tokens, num_frames, frame_size):
+            if spatial_backend == 'triton':
+                from .rocm_spatial import spatial as depthwise
+                if torch.is_grad_enabled():
+                    raise RuntimeError('Triton H3 spatial convolution requires inference without autograd')
+                conv = getattr(self, '_conv', self)
+                channels = getattr(self, 'channels', slice(None))
+                weight = getattr(conv, f'{proj}_sp').weight[channels]
+                x = depthwise(tokens, weight, num_frames, frame_size)
+                temporal = getattr(conv, f'{proj}_tm').weight[channels].squeeze(1).to(x.dtype)
+                return x, temporal.contiguous()
+            x, weight = original(self, proj, tokens, num_frames, frame_size)
             # MIOpen can return NCHW even for the channels-last input. The pinned
             # temporal Triton kernel requires contiguous [frames, tokens, channels].
             return x.contiguous(), weight.contiguous()

@@ -57,6 +57,8 @@ def main():
         ROCBLAS_USE_HIPBLASLT=os.environ.get('FV_ROCBLAS_USE_HIPBLASLT','0'))
     report['compile_environment']=dict(TORCH_COMPILE_DISABLE=os.environ.get('FV_TORCH_COMPILE_DISABLE','0'))
     report['video_blas_environment']=dict(FREEVIDEO_ROCM_VIDEO_BLAS=os.environ.get('FV_ROCM_VIDEO_BLAS','default'))
+    report['spatial_conv_environment']=dict(FREEVIDEO_ROCM_SPATIAL_CONV=os.environ.get('FV_ROCM_SPATIAL_CONV','miopen'))
+    report['attention_environment']=dict(FREEVIDEO_ROCM_ATTENTION=os.environ.get('FV_ROCM_ATTENTION','aotriton'))
     report['case']={k:str(v) if isinstance(v,Path) else v for k,v in report['case'].items()}
     def save():
         staging=report_path.with_suffix('.tmp')

@@ -59,6 +59,9 @@ class CUDABackend(DeviceBackend):
                     hip=torch.version.hip,
                     gcn_arch=getattr(torch.cuda.get_device_properties(0), 'gcnArchName', ''),
                     device_backend='rocm' if torch.version.hip else 'cuda',
+                    rocm_kernel_environment={name: os.environ.get(name, default) for name, default in
+                        (('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen'), ('FREEVIDEO_ROCM_ATTENTION', 'aotriton'))}
+                        if torch.version.hip else None,
                     rocm_blas_environment={name: os.environ.get(name) for name in
                         ('TORCH_BLAS_PREFER_HIPBLASLT', 'ROCBLAS_USE_HIPBLASLT')} if torch.version.hip else None,
                     backend_source_sha256={name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()

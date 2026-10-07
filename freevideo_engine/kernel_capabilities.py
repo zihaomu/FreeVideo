@@ -14,7 +14,7 @@ COMPUTE_FILES = ('attention.py', 'backends/__init__.py', 'backends/base.py', 'ba
                  'backends/cuda_attention.py', 'probe.py', 'fp8_gemm.py', 'fp8_ops.py', 'weight_only.py',
                  'kernel_capabilities.py', 'doctor.py', 'fa4_guard.py', 'triton_compat.py', 'runtime.py',
                  'head_chunk.py', 'blocks.py', 'packing.py', 'dependencies.json')
-COMPUTE_FILES += ('hardware.py', 'paths.py', 'rocm_compat.py')
+COMPUTE_FILES += ('hardware.py', 'paths.py', 'rocm_compat.py', 'rocm_spatial.py', 'rocm_attention.py')
 
 
 def package_versions():
@@ -35,6 +35,9 @@ def identity(hardware, versions=None):
     package = Path(__file__).parent
     overlay = data_root() / 'vendor/fa4-b26-valid-tile/flash_attn/cute/flash_fwd.py'
     return dict(schema_version=1,
+                rocm_kernel_environment={name: os.environ.get(name, default) for name, default in
+                    (('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen'), ('FREEVIDEO_ROCM_ATTENTION', 'aotriton'))}
+                    if hardware.hip_version else None,
                 rocm_blas_environment={name: os.environ.get(name) for name in
                     ('TORCH_BLAS_PREFER_HIPBLASLT', 'ROCBLAS_USE_HIPBLASLT')}
                     if hardware.hip_version else None,

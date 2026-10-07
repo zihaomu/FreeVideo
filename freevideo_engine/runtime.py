@@ -417,6 +417,8 @@ class Engine:
         fa4_module = sys.modules.get('flash_attn.cute.flash_fwd')
         fa4_path = Path(fa4_module.__file__).resolve() if fa4_module is not None else None
         self.config = {'device_backend': self.device_backend.capabilities.name, 'task': task, 'attention': attention, 'prefetch': prefetch, 'adaln_cache': adaln_cache,
+                       'rocm_spatial_conv': os.environ.get('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen') if torch.version.hip else None,
+                       'rocm_attention': os.environ.get('FREEVIDEO_ROCM_ATTENTION', 'aotriton') if torch.version.hip else None,
                        'adaln_mode': ('portable-model-asset' if table_cache is not None and table_cache.asset else
                                       'optional-model-asset' if table_cache is not None and table_cache.optional_loaded else
                                       'local-precompute' if adaln_cache else 'original-projections'),

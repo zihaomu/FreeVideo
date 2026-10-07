@@ -92,6 +92,7 @@ git clone https://github.com/FlashML-org/FreeVideo.git && cd FreeVideo
 ### 更多文档
 
 - [FreeVideo Adaptive Execution Planner](docs/zh-CN/execution-planning.md)
+- [R9700 H3 加速结果与启动方式](docs/zh-CN/r9700-acceleration.md)
 
 ### 问题反馈
 
