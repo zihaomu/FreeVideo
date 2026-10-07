@@ -52,10 +52,15 @@ class CUDABackend(DeviceBackend):
 
     def arithmetic_identity(self):
         import hashlib
+        import os
         from pathlib import Path
         torch = self.torch
         return dict(cuda=torch.version.cuda, gpu=torch.cuda.get_device_name(),
-                    device_backend='cuda',
+                    hip=torch.version.hip,
+                    gcn_arch=getattr(torch.cuda.get_device_properties(0), 'gcnArchName', ''),
+                    device_backend='rocm' if torch.version.hip else 'cuda',
+                    rocm_blas_environment={name: os.environ.get(name) for name in
+                        ('TORCH_BLAS_PREFER_HIPBLASLT', 'ROCBLAS_USE_HIPBLASLT')} if torch.version.hip else None,
                     backend_source_sha256={name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                                            for name in ('__init__.py', 'base.py', 'cuda.py', 'cuda_attention.py')},
                     tf32=torch.backends.cuda.matmul.allow_tf32,
@@ -74,10 +79,18 @@ class CUDABackend(DeviceBackend):
         precision = manifest.get('precision', 'bf16')
         actual_fp8_gemm = None
         if precision == 'fp8':
-            from src.models.ops.fp8_linear import per_tensor_gemm
+            from src.models.ops import fp8_linear
+            # On ROCm select the verified scale policy from the real architecture,
+            # never from HIP's CUDA capability compatibility value.
+            if self.torch.version.hip:
+                arch = getattr(self.torch.cuda.get_device_properties(0), 'gcnArchName', '').split(':')[0]
+                if linear_compute == 'native-fp8' and arch != 'gfx1201':
+                    raise ValueError('ROCm native FP8 is currently validated only on gfx1201')
+                fp8_linear._PER_TENSOR = True
+            per_tensor_gemm = fp8_linear.per_tensor_gemm
             from ..fp8 import install_cached_linears
             expected = 'per_tensor' if per_tensor_gemm() else 'rowwise'
-            if linear_compute == 'native-fp8' and self.torch.cuda.get_device_capability() < (8, 9):
+            if linear_compute == 'native-fp8' and not self.torch.version.hip and self.torch.cuda.get_device_capability() < (8, 9):
                 raise ValueError('Native FP8 GEMM requires Ada or newer; choose bf16-weight-only on Ampere')
             if linear_compute == 'native-fp8' and manifest['scale_granularity'] != expected:
                 raise ValueError('FP8 cache scale granularity does not match this GPU; prepare a separate cache')

@@ -1,0 +1,7 @@
+# Imports needed for the pinned Diffusers H3 attention probe; no Torch/Triton replacement.
+huggingface_hub==1.30.0
+safetensors==0.8.0
+importlib_metadata>=8
+regex!=2019.12.17
+requests>=2.32
+Pillow==12.3.0
