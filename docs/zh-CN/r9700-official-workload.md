@@ -51,3 +51,5 @@ bash scripts/amd/run_official_case.sh \
 这是一次冷启动验证，尚未测量新工作负载的预热中位数。回执确认实际执行两轮 8＋3 步，输出 1344×768、243 帧、24 fps。全部帧和音频完整解码通过，无黑帧或相邻完全重复帧；潜变量、提示词条件与音频均有限值，原始音频饱和比例为 0。已检查视频抽帧图；本轮未重新进行音频语义对照。
 
 原始报告位于数据盘 `experiments/freevideo-r9700/reports/official-workload-20261007`，含固定的官方源码、运行源码哈希、profile、提示词及上采样权重 SHA-256 验证。`configuration-validation.json` 记录参数检查；`performance-summary.json` 记录测量；`final-validation.json` 确认 234 个运行源文件和 profile 在测试期间未变化。完整请求使用独立案例 `official-8plus3-s2-v1`，输出位于 `outputs/official-8plus3-s2-v1/run-00`。
+
+后续[逐算子耗时调研](r9700-official-operators.md)完整采集同配置的全部 8＋3 步、上采样和解码，定位具体 GPU 热点，并验证输出与本次基线逐元素一致。
