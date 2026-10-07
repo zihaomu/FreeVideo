@@ -36,7 +36,8 @@ def identity(hardware, versions=None):
     overlay = data_root() / 'vendor/fa4-b26-valid-tile/flash_attn/cute/flash_fwd.py'
     return dict(schema_version=1,
                 rocm_kernel_environment={name: os.environ.get(name, default) for name, default in
-                    (('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen'), ('FREEVIDEO_ROCM_ATTENTION', 'aotriton'))}
+                    (('FREEVIDEO_ROCM_SPATIAL_CONV', 'miopen'), ('FREEVIDEO_ROCM_ATTENTION', 'aotriton'),
+                     ('FREEVIDEO_ROCM_AUDIO_CONV', 'miopen'))}
                     if hardware.hip_version else None,
                 rocm_blas_environment={name: os.environ.get(name) for name in
                     ('TORCH_BLAS_PREFER_HIPBLASLT', 'ROCBLAS_USE_HIPBLASLT')}

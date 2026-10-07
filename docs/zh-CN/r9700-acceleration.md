@@ -4,6 +4,8 @@
 
 输出会有数值及构图差异。抽帧和音频标签检查通过本次筛查，不能据此声称逐像素等价或无损。原生路径继续作为默认；加速入口仅支持 gfx1201 推理。
 
+后续的 [耗时分布与解码优化](r9700-bottlenecks.md) 以这里的 559.7 秒为基线，分析各阶段占比并验证视频 Linear 缓存和原生音频卷积。下表保留上轮测量记录。
+
 ## 测速结果
 
 | 路径 | 首条完整请求 | 三次预热请求 | 预热中位数 |
@@ -51,7 +53,7 @@
 
 ## 使用加速入口
 
-本工作区已准备好模型、固定镜像和手动 profile，可使用 [`run_rocm_fast.sh`](../../scripts/amd/run_rocm_fast.sh) 运行相同规格：
+本工作区已准备好模型、固定镜像和手动 profile，可使用 [`run_rocm_fast.sh`](../../scripts/amd/run_rocm_fast.sh) 运行相同规格。以下启动参数已更新为后续解码优化方案，使用 Linear 缓存和原生音频卷积；上表仍保留上一轮测量结果：
 
 ```bash
 bash scripts/amd/run_rocm_fast.sh -m freevideo_engine generate \
@@ -60,7 +62,7 @@ bash scripts/amd/run_rocm_fast.sh -m freevideo_engine generate \
   --width 1344 --height 768 --frames 243 --base-steps 8 \
   --no-two-pass --seed 2026090901 \
   --no-history-placement --no-tuning --resource-retries 0 \
-  --profile /data/experiments/freevideo-r9700/prepared/profiles/native-final-v2.json \
+  --profile /data/experiments/freevideo-r9700/prepared/profiles/native-decoder-fast-v1.json \
   --model-paths /data/experiments/freevideo-r9700/runtime/encoder-paths.yaml \
   --prompt-file /workspace/scripts/amd/prompt.txt \
   --out /data/experiments/freevideo-r9700/outputs/r9700-fast-video.mp4
@@ -73,10 +75,11 @@ bash scripts/amd/run_rocm_fast.sh -m freevideo_engine generate \
 | `FV_ROCM_SPATIAL_CONV` | `FREEVIDEO_ROCM_SPATIAL_CONV` | `triton` | `miopen` |
 | `FV_ROCM_ATTENTION` | `FREEVIDEO_ROCM_ATTENTION` | `triton-window` | `aotriton` |
 | `FV_ROCM_VIDEO_BLAS` | `FREEVIDEO_ROCM_VIDEO_BLAS` | `cublaslt` | `default` |
+| `FV_ROCM_AUDIO_CONV` | `FREEVIDEO_ROCM_AUDIO_CONV` | `native` | `miopen` |
 
 `cublaslt` 是 PyTorch 在 HIP 上选择 hipBLASLt 的枚举名，作用域只限视频 VAE。采样及音频沿用原来的 BLAS；不要用全局 BLAS 开关代替它。
 
-批量复现用 `run_case.py`，将三个主机变量设为加速入口值，并提供现有手动 profile。每次采用新的 `--name`，以保留历史结果。`run_rocm.sh` 自身继续默认 `miopen` / `aotriton`；如果仅关闭本轮新增内核并保留已有视频 VAE 优化，设置 `FV_ROCM_SPATIAL_CONV=miopen FV_ROCM_ATTENTION=aotriton FV_ROCM_VIDEO_BLAS=cublaslt`。
+批量复现用 `run_case.py`，将四个主机变量设为加速入口值，并提供同一手动 profile。每次采用新的 `--name`，以保留历史结果。`run_rocm.sh` 自身继续默认 `miopen` / `aotriton`；复现表中原生基线时，设置 `FV_ROCM_SPATIAL_CONV=miopen FV_ROCM_ATTENTION=aotriton FV_ROCM_VIDEO_BLAS=cublaslt FV_ROCM_AUDIO_CONV=miopen`，并使用原 `native-final-v2.json`。
 
 ## 实验记录
 

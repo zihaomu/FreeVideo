@@ -44,6 +44,25 @@ def activate():
 
 
 @contextmanager
+def audio_convolutions():
+    """Select native FP32 audio convolutions without MIOpen startup work."""
+    import torch
+    requested = os.environ.get('FREEVIDEO_ROCM_AUDIO_CONV', 'miopen')
+    if requested not in ('miopen', 'native'):
+        raise ValueError('FREEVIDEO_ROCM_AUDIO_CONV must be miopen or native')
+    if requested == 'miopen':
+        yield dict(requested=requested, changed=False)
+        return
+    if not torch.version.hip or torch.cuda.get_device_properties(0).gcnArchName.split(':')[0] != 'gfx1201':
+        raise ValueError('Native H3 audio convolutions are validated only on gfx1201')
+    previous = torch.backends.cudnn.enabled
+    with torch.backends.cudnn.flags(enabled=False):
+        yield dict(requested=requested, changed=True, previous_enabled=previous,
+                   active_enabled=torch.backends.cudnn.enabled,
+                   scope='GPU FP32 audio VAE convolutions only')
+
+
+@contextmanager
 def video_blas():
     """Temporarily select HIP video GEMM without changing sampling/audio GEMM."""
     import torch

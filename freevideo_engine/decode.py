@@ -7,7 +7,7 @@ import time
 import torch
 
 from .offload import LayerOffloader, pin_layer_weights
-from .rocm_compat import video_blas
+from .rocm_compat import audio_convolutions, video_blas
 from .vae_tiles import TileDecoder, compile_blocks
 
 
@@ -200,7 +200,10 @@ def decode_to_file(latents, audio_latents, out_path, *, base, offload=False, pre
         if torch.version.hip and artifacts_dir:
             import numpy as np
             np.save(Path(artifacts_dir) / 'audio_decoder_input.npy', audio_input.cpu().numpy(), allow_pickle=False)
-        audio = audio_vae.decode(audio_input, return_dict=False)[0]
+        with audio_convolutions() as audio_convolution_metrics:
+            if audio_convolution_metrics['changed'] and audio_input.dtype != torch.float32:
+                raise RuntimeError('Native H3 audio convolutions require FP32 input')
+            audio = audio_vae.decode(audio_input, return_dict=False)[0]
         audio = audio.float().permute(1, 0, 2)[0].cpu()
         audio_diagnostics.update(output_rms=audio.square().mean().sqrt().item(),
             output_peak=audio.abs().max().item(),
@@ -245,6 +248,7 @@ def decode_to_file(latents, audio_latents, out_path, *, base, offload=False, pre
             'vae_preload_seconds': preload_seconds,
             'audio_load_decode_seconds': audio_seconds, 'encode_seconds': time.perf_counter() - encode_started,
             'audio_decoder': audio_diagnostics,
+            'audio_convolution': audio_convolution_metrics,
             'decoded_artifact_save_seconds': artifact_seconds,
             'streamed_video_output': stream_output, 'streamed_vae_weights': stream_weights,
             'vae_resident_blocks': resident_blocks,
