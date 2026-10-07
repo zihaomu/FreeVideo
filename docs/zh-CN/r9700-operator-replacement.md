@@ -93,7 +93,7 @@ FV_ROCM_GATE_BLAS=cublaslt FV_ROCM_STATE_BLAS=cublaslt \
 FV_ROCM_SPATIAL_CONV=triton FV_ROCM_ATTENTION=triton-window \
 FV_ROCM_VIDEO_BLAS=cublaslt FV_ROCM_AUDIO_CONV=native \
 python3 scripts/amd/run_case.py --name operator-repro-s2 \
-  --width 1344 --height 768 --frames 243 --repeats 4 \
+  --width 1344 --height 768 --frames 243 --no-two-pass --repeats 4 \
   --profile /dc1/zihaomu/free_token_mapping/experiments/freevideo-r9700/prepared/profiles/native-decoder-fast-v1.json
 ```
 

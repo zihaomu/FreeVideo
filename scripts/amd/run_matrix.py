@@ -60,8 +60,7 @@ def main():
         command=['python3',str(ROOT/'scripts/amd/run_case.py'),'--name',name,
                  '--width',str(width),'--height',str(height),'--frames',str(frames),
                  '--steps',str(steps),'--profile',str(args.profile),'--repeats','4']
-        if two_pass:
-            command.append('--two-pass')
+        command.append('--two-pass' if two_pass else '--no-two-pass')
         row=dict(name=name,state='running');state['cases'].append(row);save()
         print(json.dumps(dict(event='case_start',**row)),flush=True)
         with (EXPERIMENT/'reports'/f'{name}-driver.log').open('w') as stream:

@@ -96,6 +96,7 @@ git clone https://github.com/FlashML-org/FreeVideo.git && cd FreeVideo
 - [R9700 9 分钟耗时分布与解码优化](docs/zh-CN/r9700-bottlenecks.md)
 - [R9700 与 CUDA 性能对齐及低效算子](docs/zh-CN/r9700-cuda-parity.md)
 - [R9700 BF16 算子替换与端到端复测](docs/zh-CN/r9700-operator-replacement.md)
+- [R9700 官方工作负载对齐：1344×768、10 秒、8＋3 步](docs/zh-CN/r9700-official-workload.md)
 
 ### 问题反馈
 

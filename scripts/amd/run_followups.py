@@ -101,7 +101,7 @@ def main():
             raise FileExistsError(path)
         write(path,profile)
         command=['python3',str(ROOT/'scripts/amd/run_case.py'),'--name',name,'--width',str(width),
-            '--height',str(height),'--frames',str(frames),'--steps','8','--seed',str(seed),
+            '--height',str(height),'--frames',str(frames),'--steps','8','--no-two-pass','--seed',str(seed),
             '--profile',str(path),'--repeats',str(repeats)]
         if prompt:
             command+=['--prompt',str(prompt)]

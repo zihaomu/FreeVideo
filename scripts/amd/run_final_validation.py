@@ -64,7 +64,7 @@ def main():
                    baseline=(args.baseline_prefix or args.gate.name.removesuffix('-followups.json')+'-quality')+'-'+family)
         state['cases'].append(row); write(report, state)
         command = ['python3', str(ROOT/'scripts/amd/run_case.py'), '--name', name,
-                   '--width', '768', '--height', '448', '--frames', '124', '--steps', '8',
+                   '--width', '768', '--height', '448', '--frames', '124', '--steps', '8', '--no-two-pass',
                    '--seed', str(row['seed']), '--repeats', '1', '--profile', str(profile_path),
                    '--prompt', str(ROOT/'scripts/amd/prompts'/f'{family}.txt')]
         with (EXPERIMENT/'reports'/f'{name}-driver.log').open('w') as stream:

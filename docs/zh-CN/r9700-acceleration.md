@@ -79,7 +79,7 @@ bash scripts/amd/run_rocm_fast.sh -m freevideo_engine generate \
 
 `cublaslt` 是 PyTorch 在 HIP 上选择 hipBLASLt 的枚举名，作用域只限视频 VAE。采样及音频沿用原来的 BLAS；不要用全局 BLAS 开关代替它。
 
-批量复现用 `run_case.py`，将四个主机变量设为加速入口值，并提供同一手动 profile。每次采用新的 `--name`，以保留历史结果。`run_rocm.sh` 自身继续默认 `miopen` / `aotriton`；复现表中原生基线时，设置 `FV_ROCM_SPATIAL_CONV=miopen FV_ROCM_ATTENTION=aotriton FV_ROCM_VIDEO_BLAS=cublaslt FV_ROCM_AUDIO_CONV=miopen`，并使用原 `native-final-v2.json`。
+批量复现用 `run_case.py`，将四个主机变量设为加速入口值，并提供同一手动 profile 及 `--no-two-pass`。每次采用新的 `--name`，以保留历史结果。`run_rocm.sh` 自身继续默认 `miopen` / `aotriton`；复现表中原生基线时，设置 `FV_ROCM_SPATIAL_CONV=miopen FV_ROCM_ATTENTION=aotriton FV_ROCM_VIDEO_BLAS=cublaslt FV_ROCM_AUDIO_CONV=miopen`，并使用原 `native-final-v2.json`。
 
 ## 实验记录
 

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name": "official-current-1344x768-10s-8plus3",
+  "width": 1344,
+  "height": 768,
+  "seconds": 10.0,
+  "fps": 24,
+  "base_steps": 8,
+  "refine_steps": 3,
+  "two_pass": true,
+  "upstream_commit": "7c3536a999e23ba0e6404b085cbdf42718d435d5",
+  "benchmark_source": "https://github.com/FlashML-org/FreeVideo/blob/7c3536a999e23ba0e6404b085cbdf42718d435d5/docs/zh-CN/execution-planning.md",
+  "steps_source": "https://github.com/FlashML-org/FreeVideo/blob/7c3536a999e23ba0e6404b085cbdf42718d435d5/freevideo_engine/cli.py",
+  "scope": "Resolution, requested duration and two-pass mode match the published benchmark. Step counts use current official CLI defaults; the historical 122-second entry does not list its step counts."
+}

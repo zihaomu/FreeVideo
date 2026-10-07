@@ -113,7 +113,7 @@ FV_ROCM_AUDIO_CONV=native bash scripts/amd/run_rocm_fast.sh -m freevideo_engine 
   --out /data/experiments/freevideo-r9700/outputs/r9700-decoder-fast-video.mp4
 ```
 
-完整重复测试使用 `scripts/amd/run_case.py`，设置 `FV_ROCM_SPATIAL_CONV=triton FV_ROCM_ATTENTION=triton-window FV_ROCM_VIDEO_BLAS=cublaslt FV_ROCM_AUDIO_CONV=native`，指定同一 profile、`--width 1344 --height 768 --frames 243 --repeats 4`，并使用新的 `--name` 保留旧结果。每次重新启动进程、编码提示词、加载和采样，首条使用独立编译缓存，其余仅复用磁盘和编译缓存；OS 文件缓存未清空。
+完整重复测试使用 `scripts/amd/run_case.py`，设置 `FV_ROCM_SPATIAL_CONV=triton FV_ROCM_ATTENTION=triton-window FV_ROCM_VIDEO_BLAS=cublaslt FV_ROCM_AUDIO_CONV=native`，指定同一 profile、`--width 1344 --height 768 --frames 243 --no-two-pass --repeats 4`，并使用新的 `--name` 保留旧结果。每次重新启动进程、编码提示词、加载和采样，首条使用独立编译缓存，其余仅复用磁盘和编译缓存；OS 文件缓存未清空。
 
 回退本轮解码优化：设置 `FV_ROCM_AUDIO_CONV=miopen`，并使用原 `native-final-v2.json`（`decoder.linear_compute_cache=false`）。`run_rocm.sh` 的音频默认仍为 `miopen`；全局 `TORCH_BLAS_PREFER_HIPBLASLT` 和 `ROCBLAS_USE_HIPBLASLT` 继续关闭，视频 VAE 的 hipBLASLt 选择只在视频解码期间生效。原生音频路径仅验证了 gfx1201 和 FP32 输入，不扩大到其他架构。
 
