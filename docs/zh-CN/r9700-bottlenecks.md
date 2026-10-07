@@ -78,7 +78,7 @@ VAE Linear 权重缓存保留原 autocast 的 FP16 计算值，Norm、残差 sca
 
 四次请求的所有 243 帧原始 RGB 都与本轮 9 分钟基线逐像素完全一致，音频解码输入也完全一致。音频相对 RMSE 最大为 1.22e-06，最大绝对误差约 1.12e-6；原生 FP32 卷积的舍入差异没有改变本次 CLAP 标签排序，预期滚动声仍排第一。四次新方案的 RGB、音频和音频输入彼此完全一致。该 RGB 等价结论针对上轮 Triton 窗口方案，不扩大为与更早原生 Attention 方案等价。
 
-四次都重新编码提示词，conditioning SHA256 与基线相同；实际 8 步、1600 次全局原后端调用、11200 次窗口 Triton 调用、4800 次 FP8 scaled-mm 调用及原 head/FF 切块均匹配，未减少帧数、步数或替换采样精度。15 个计算及运行文件在四次验证期间固定。原生音频探针也验证了正常和异常退出恢复后端设置。计时排除 Docker 启动，未并发其他 GPU 测试。
+四次都重新编码提示词，conditioning SHA256 与基线相同；实际 8 步、1600 次全局原后端调用、11200 次窗口 Triton 调用、4800 次包装器记录的 FP8 头投影调用及原 head/FF 切块均匹配，未减少帧数、步数或替换采样精度。4800 不是全部 FP8 GEMM 数量：首个 block 的 trace 实际包含 86 次，其中包装器覆盖 12 次，其余是 FFN 和 Attention 输出投影。15 个计算及运行文件在四次验证期间固定。原生音频探针也验证了正常和异常退出恢复后端设置。计时排除 Docker 启动，未并发其他 GPU 测试。
 
 
 ## 复现和回退
@@ -128,3 +128,5 @@ FV_ROCM_AUDIO_CONV=native bash scripts/amd/run_rocm_fast.sh -m freevideo_engine 
 - `decoder-source-snapshot.json` 固定四次最终验证期间的 15 个计算和运行文件 SHA256。`decoder-performance-summary.json` 与 `decoder-stage-breakdown.json` 保存最终中位数、阶段对照及四条原始输出数值结果。视频 VAE 诊断中的初始设备错误及缓存标记纠正记录在 `vae-profile-correction.json`，不用于最终收益计算。
 
 下一轮应继续围绕窗口 Attention 和 FP8 矩阵乘优化采样。当前窗口启动参数、布局和 FFN 切块候选均没有足够稳定的完整收益，BF16 门控 BLAS 候选有质量回退，均未进入最终方案。视频解码矩阵乘仍值得分析，但最终优先级以完整采样的约 460 秒为主。上述收益仅覆盖固定版本、单张 R9700 和该 S2 请求，没有测量 LoRA 或二次采样。
+
+后续 [采样优化候选评估](r9700-sampler-opportunities.md) 拆细 FP8 时间，并记录 Gather 融合、门控合并、K 切块和量化小算子的局部对照结果。
